@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Versions — RivalReview Evals</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #09090b; color: #f4f4f5; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .badge { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+    .input-field { width: 100%; background: #18181b; border: 1px solid #3f3f46; border-radius: 4px; padding: 8px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #e4e4e7; outline: none; box-sizing: border-box; }
+    .input-field:focus { border-color: #71717a; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<header style="border-bottom: 1px solid #1c1c1f; padding: 0 32px;">
+  <div style="max-width: 900px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px;">
+    <a href="/" class="mono" style="font-size: 11px; color: #52525b; text-decoration: none;" onmouseover="this.style.color='#a1a1aa'" onmouseout="this.style.color='#52525b'">← back</a>
+    <div style="width: 1px; height: 20px; background: #27272a;"></div>
+    <h1 class="mono" style="font-size: 13px; font-weight: 600; color: #f4f4f5; margin: 0;">VERSION MANAGEMENT</h1>
+  </div>
+</header>
+
+<main style="max-width: 900px; margin: 0 auto; padding: 32px;">
+
+  <!-- Context -->
+  <div style="background: #111113; border: 1px solid #27272a; border-radius: 6px; padding: 16px 20px; margin-bottom: 32px;">
+    <div class="mono" style="font-size: 10px; color: #3f3f46; margin-bottom: 8px; letter-spacing: 0.1em;">WHAT ARE VERSIONS?</div>
+    <div style="font-size: 12px; color: #71717a; line-height: 1.6; max-width: 600px;">
+      A version tracks a specific state of your pipeline. When you improve a prompt or fix a bug, create a new version, run evals, and compare scores. New versions automatically become the current version.
+    </div>
+    <div style="margin-top: 10px; display: flex; gap: 20px; flex-wrap: wrap;">
+      <span style="font-size: 11px; color: #52525b;"><span style="color: #34d399;">1.</span> Change something in RivalReview</span>
+      <span style="font-size: 11px; color: #52525b;"><span style="color: #34d399;">2.</span> Create a new version here</span>
+      <span style="font-size: 11px; color: #52525b;"><span style="color: #34d399;">3.</span> Run evals on dashboard</span>
+      <span style="font-size: 11px; color: #52525b;"><span style="color: #34d399;">4.</span> Compare in History</span>
+    </div>
+  </div>
+
+  {% if error %}
+  <div style="background: #2d0000; border: 1px solid #7f1d1d; border-radius: 4px; padding: 12px 16px; margin-bottom: 20px;">
+    <div class="mono" style="font-size: 12px; color: #f87171;">{{ error }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Create new version -->
+  <section style="margin-bottom: 32px;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+      <span class="mono" style="font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.12em;">NEW VERSION</span>
+      <div style="flex: 1; height: 1px; background: #27272a;"></div>
+    </div>
+
+    <div style="background: #111113; border: 1px solid #27272a; border-radius: 6px; padding: 20px;">
+      <form method="post" action="/versions" style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label class="mono" style="font-size: 10px; color: #52525b; display: block; margin-bottom: 6px; letter-spacing: 0.08em;">VERSION NAME *</label>
+          <input type="text" name="name" required placeholder="e.g. v1.1-prompt-fix" class="input-field" />
+        </div>
+        <div>
+          <label class="mono" style="font-size: 10px; color: #52525b; display: block; margin-bottom: 6px; letter-spacing: 0.08em;">
+            WHAT CHANGED? <span style="color: #f87171;">*required</span>
+          </label>
+          <textarea name="description" rows="2" required
+            placeholder="e.g. Updated Layer 1 prompt to require more specific theme names. Fixed volume sorting bug in app_synthesis_agent."
+            class="input-field" style="resize: none;"></textarea>
+          <div style="font-size: 10px; color: #3f3f46; margin-top: 4px;">Be specific — this is how you'll know what changed when comparing versions later.</div>
+        </div>
+        <div>
+          <button type="submit"
+            style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; background: #34d399; color: #09090b; padding: 8px 20px; border-radius: 4px; border: none; cursor: pointer; transition: background 0.15s;"
+            onmouseover="this.style.background='#6ee7b7'" onmouseout="this.style.background='#34d399'">
+            + CREATE VERSION
+          </button>
+          <span style="font-size: 11px; color: #3f3f46; margin-left: 12px;">Will become the current version automatically.</span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- All versions -->
+  <section>
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+      <span class="mono" style="font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.12em;">ALL VERSIONS</span>
+      <div style="flex: 1; height: 1px; background: #27272a;"></div>
+      <span class="mono" style="font-size: 11px; color: #3f3f46;">{{ versions | length }} total</span>
+    </div>
+
+    {% if not versions %}
+    <div style="background: #111113; border: 1px solid #27272a; border-radius: 6px; padding: 48px; text-align: center;">
+      <div style="font-size: 13px; color: #71717a;">No versions yet. Create one above.</div>
+    </div>
+    {% else %}
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      {% for v in versions %}
+      <div style="background: {% if v.is_current %}#0a1f12{% else %}#111113{% endif %};
+                  border: 1px solid {% if v.is_current %}#14532d{% else %}#27272a{% endif %};
+                  border-radius: 6px; padding: 16px 20px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;">
+          <div style="flex: 1;">
+
+            <!-- Name + badges -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+              <span class="mono" style="font-size: 13px; font-weight: 600; color: #e4e4e7;">{{ v.name }}</span>
+              {% if v.is_baseline %}
+              <span class="badge" style="background:#082f49; color:#38bdf8;">baseline</span>
+              {% endif %}
+              {% if v.is_current %}
+              <span class="badge" style="background:#052e16; color:#34d399;">current</span>
+              {% endif %}
+              <span class="mono" style="font-size: 10px; color: #3f3f46;">{{ v.run_count }} run{{ 's' if v.run_count != 1 else '' }}</span>
+            </div>
+
+            <!-- Description -->
+            <div style="font-size: 12px; color: {% if v.description %}#71717a{% else %}#3f3f46{% endif %}; margin-bottom: 8px; line-height: 1.4; font-style: {% if not v.description %}italic{% else %}normal{% endif %};">
+              {{ v.description or 'No description.' }}
+            </div>
+
+            <!-- Last run scores -->
+            {% set last = version_last_scores.get(v.id) %}
+            {% if last %}
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 6px; flex-wrap: wrap;">
+              <span style="font-size: 11px; color: #52525b;">Last run: {{ to_ist_short(last.date) }}</span>
+              <span class="mono" style="font-size: 11px; color: #34d399;">{{ last.passed }}✓</span>
+              <span class="mono" style="font-size: 11px; color: #f87171;">{{ last.failed }}✗</span>
+              <span class="mono" style="font-size: 11px; color: #71717a;">{{ last.total }} total</span>
+              <a href="/compare?version_a={{ v.id }}" class="mono"
+                style="font-size: 10px; color: #3f3f46; text-decoration: none; border: 1px solid #27272a; padding: 2px 8px; border-radius: 3px; transition: all 0.15s;"
+                onmouseover="this.style.color='#a1a1aa'; this.style.borderColor='#52525b'"
+                onmouseout="this.style.color='#3f3f46'; this.style.borderColor='#27272a'">compare →</a>
+            </div>
+            {% else %}
+            <div style="font-size: 11px; color: #3f3f46; margin-bottom: 6px;">No runs yet — select on dashboard and run evals.</div>
+            {% endif %}
+
+            <div class="mono" style="font-size: 10px; color: #3f3f46;">Created {{ to_ist(v.created_at) }}</div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; align-items: flex-end;">
+            {% if not v.is_current %}
+            <form method="post" action="/versions/{{ v.id }}/set-current">
+              <button type="submit"
+                style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #52525b; border: 1px solid #27272a; padding: 5px 12px; border-radius: 4px; background: transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
+                onmouseover="this.style.borderColor='#52525b'; this.style.color='#a1a1aa'"
+                onmouseout="this.style.borderColor='#27272a'; this.style.color='#52525b'">
+                set current
+              </button>
+            </form>
+            {% endif %}
+            {% if not v.is_baseline %}
+            <form method="post" action="/versions/{{ v.id }}/delete"
+              onsubmit="return confirm('Delete version {{ v.name }} and all its runs? This cannot be undone.')">
+              <button type="submit"
+                style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #3f3f46; border: 1px solid #27272a; padding: 5px 12px; border-radius: 4px; background: transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
+                onmouseover="this.style.borderColor='#7f1d1d'; this.style.color='#f87171'"
+                onmouseout="this.style.borderColor='#27272a'; this.style.color='#3f3f46'">
+                delete
+              </button>
+            </form>
+            {% else %}
+            <span class="mono" style="font-size: 10px; color: #27272a; padding: 5px 12px;">protected</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+
+</main>
+</body>
+</html>

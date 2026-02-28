@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>History — RivalReview Evals</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #09090b; color: #f4f4f5; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .badge { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+    .badge-green { background: #052e16; color: #34d399; }
+    .badge-red   { background: #2d0000; color: #f87171; }
+    .badge-zinc  { background: #27272a; color: #a1a1aa; }
+    .btn-ghost { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #52525b; background: transparent; border: 1px solid #27272a; padding: 4px 10px; border-radius: 3px; text-decoration: none; cursor: pointer; transition: all 0.15s; display: inline-block; }
+    .btn-ghost:hover { border-color: #52525b; color: #a1a1aa; }
+    .btn-danger { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #3f3f46; background: transparent; border: 1px solid #27272a; padding: 4px 10px; border-radius: 3px; cursor: pointer; transition: all 0.15s; }
+    .btn-danger:hover { border-color: #7f1d1d; color: #f87171; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<header style="border-bottom: 1px solid #1c1c1f; padding: 0 32px;">
+  <div style="max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px;">
+    <a href="/" class="mono" style="font-size: 11px; color: #52525b; text-decoration: none;" onmouseover="this.style.color='#a1a1aa'" onmouseout="this.style.color='#52525b'">← back</a>
+    <div style="width: 1px; height: 20px; background: #27272a;"></div>
+    <h1 class="mono" style="font-size: 13px; font-weight: 600; color: #f4f4f5; margin: 0;">EVAL HISTORY</h1>
+    <div style="flex: 1;"></div>
+    <a href="/compare" class="mono" style="font-size: 11px; color: #52525b; text-decoration: none; border: 1px solid #27272a; padding: 4px 12px; border-radius: 3px; transition: all 0.15s;"
+      onmouseover="this.style.borderColor='#52525b'; this.style.color='#a1a1aa'"
+      onmouseout="this.style.borderColor='#27272a'; this.style.color='#52525b'">
+      ⇄ Compare versions
+    </a>
+  </div>
+</header>
+
+<main style="max-width: 1100px; margin: 0 auto; padding: 24px 32px 64px;">
+
+  <!-- Compact context -->
+  <div style="font-size: 11px; color: #3f3f46; margin-bottom: 20px; padding: 10px 14px; background: #111113; border: 1px solid #1c1c1f; border-radius: 4px;">
+    Each row is one eval run. Click <strong style="color: #52525b;">view →</strong> for full results. Scores compare against the previous run of the same version, or the last baseline run if this is a new version.
+  </div>
+
+  <!-- Runs list -->
+  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+    <span class="mono" style="font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.12em;">ALL RUNS</span>
+    <div style="flex: 1; height: 1px; background: #27272a;"></div>
+    <span class="mono" style="font-size: 11px; color: #3f3f46;">{{ runs | length }} total</span>
+  </div>
+
+  {% if not runs %}
+  <div style="background: #111113; border: 1px solid #27272a; border-radius: 6px; padding: 48px; text-align: center;">
+    <div style="font-size: 13px; color: #71717a;">No eval runs yet.</div>
+    <a href="/" style="font-size: 11px; color: #52525b; display: block; margin-top: 8px; text-decoration: none;">← Go to dashboard to run your first eval</a>
+  </div>
+
+  {% else %}
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    {% for run in runs %}
+    <div style="background: #111113; border: 1px solid {% if run.is_baseline %}#14532d{% else %}#27272a{% endif %}; border-radius: 6px; padding: 14px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+
+      <!-- Date + version + project -->
+      <div style="min-width: 200px; flex-shrink: 0;">
+        <div class="mono" style="font-size: 12px; color: #d4d4d8;">{{ to_ist_short(run.started_at) }}</div>
+        <div class="mono" style="font-size: 10px; color: #52525b; margin-top: 2px;">
+          {{ to_ist_time(run.started_at) }} · {{ run.version_name }}{% if run.is_baseline %} <span style="color: #34d399;">· baseline</span>{% endif %}
+        </div>
+        {% if run.project_name and run.project_name != '—' %}
+        <div style="font-size: 11px; color: #3f3f46; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;" title="{{ run.project_name }}">{{ run.project_name }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Scores -->
+      <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
+        <div style="text-align: center;">
+          <div class="mono" style="font-size: 18px; font-weight: 600; color: #34d399;">{{ run.passed }}</div>
+          <div style="font-size: 10px; color: #3f3f46;">passed</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="mono" style="font-size: 18px; font-weight: 600; color: #f87171;">{{ run.failed }}</div>
+          <div style="font-size: 10px; color: #3f3f46;">failed</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="mono" style="font-size: 18px; font-weight: 600; color: #fbbf24;">{{ run.errors }}</div>
+          <div style="font-size: 10px; color: #3f3f46;">errors</div>
+        </div>
+        <div style="text-align: center;">
+          <div class="mono" style="font-size: 18px; font-weight: 600; color: #71717a;">{{ run.total }}</div>
+          <div style="font-size: 10px; color: #3f3f46;">total</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <a href="/history/{{ run.id }}" class="btn-ghost">view →</a>
+        {% if not run.is_baseline %}
+        <form method="post" action="/history/{{ run.id }}/delete" style="display: inline;"
+          onsubmit="return confirm('Delete this run? This cannot be undone.')">
+          <button type="submit" class="btn-danger">delete</button>
+        </form>
+        {% else %}
+        <span class="mono" style="font-size: 10px; color: #27272a; padding: 4px 10px;">protected</span>
+        {% endif %}
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</main>
+</body>
+</html>

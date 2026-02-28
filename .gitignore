@@ -1,0 +1,17 @@
+# Environment variables - never commit
+.env
+
+# Databases - generated data, not source code
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db

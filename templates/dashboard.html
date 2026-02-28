@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RivalReview Evals</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'IBM Plex Sans', sans-serif; background: #09090b; color: #f4f4f5; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .drilldown { display: none; }
+    .drilldown.open { display: table-row; }
+    .badge { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+    .badge-green { background: #052e16; color: #34d399; }
+    .badge-red   { background: #2d0000; color: #f87171; }
+    .badge-zinc  { background: #27272a; color: #a1a1aa; }
+    .select-input { width: 100%; background: #18181b; border: 1px solid #3f3f46; border-radius: 4px; padding: 8px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #e4e4e7; appearance: none; outline: none; }
+    .select-input:focus { border-color: #71717a; }
+    .card { background: #111113; border: 1px solid #27272a; border-radius: 6px; }
+    .project-card { background: #111113; border: 1px solid #27272a; border-radius: 6px; padding: 16px 20px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .project-card:hover { border-color: #52525b; }
+    .project-card.selected { border-color: #34d399 !important; background: #0a1f12; }
+    .run-single-btn { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #52525b; background: transparent; border: 1px solid #27272a; padding: 3px 8px; border-radius: 3px; cursor: pointer; transition: all 0.15s; }
+    .run-single-btn:hover { border-color: #52525b; color: #a1a1aa; }
+    .progress-track { height: 4px; background: #27272a; border-radius: 2px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; }
+    .progress-fill { height: 100%; border-radius: 2px; }
+    .section-label { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .section-label .line { flex: 1; height: 1px; background: #27272a; }
+    tbody tr.data-row { cursor: pointer; }
+    tbody tr.data-row:hover td { background: rgba(255,255,255,0.015); }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<header style="border-bottom: 1px solid #1c1c1f; padding: 0 32px;">
+  <div style="max-width: 1400px; margin: 0 auto; height: 56px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 3px; height: 28px; background: #34d399; border-radius: 1px;"></div>
+      <div>
+        <div class="mono" style="font-size: 13px; font-weight: 600; color: #f4f4f5;">RIVALREVIEW / EVALS</div>
+        <div style="font-size: 11px; color: #52525b;">AI pipeline quality dashboard</div>
+      </div>
+    </div>
+    <nav style="display: flex; align-items: center; gap: 24px;">
+      <a href="/versions" class="mono" style="font-size: 12px; color: #71717a; text-decoration: none;" onmouseover="this.style.color='#e4e4e7'" onmouseout="this.style.color='#71717a'">Versions</a>
+      <a href="/history"  class="mono" style="font-size: 12px; color: #71717a; text-decoration: none;" onmouseover="this.style.color='#e4e4e7'" onmouseout="this.style.color='#71717a'">History</a>
+      <a href="/compare"  class="mono" style="font-size: 12px; color: #71717a; text-decoration: none;" onmouseover="this.style.color='#e4e4e7'" onmouseout="this.style.color='#71717a'">Compare</a>
+      {% if current_version %}<span class="badge badge-zinc">{{ current_version.name }}</span>{% endif %}
+    </nav>
+  </div>
+</header>
+
+<div style="max-width: 1400px; margin: 0 auto; padding: 32px 32px 64px;">
+
+  {% if db_error %}
+  <div style="padding: 16px; background: #2d0000; border: 1px solid #7f1d1d; border-radius: 6px; margin-bottom: 24px;">
+    <div class="mono" style="font-size: 12px; color: #f87171;">{{ db_error }}</div>
+  </div>
+  {% endif %}
+
+  <div style="display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start;">
+
+    <!-- Left -->
+    <div style="min-width: 0;">
+
+      <section style="margin-bottom: 32px;">
+        <div class="section-label">
+          <span class="mono" style="font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.12em; white-space: nowrap;">PIPELINE HEALTH</span>
+          <div class="line"></div>
+          <span style="font-size: 11px; color: #3f3f46; white-space: nowrap;">Click a project to select it</span>
+        </div>
+
+        {% if not health %}
+        <div class="card" style="text-align: center; padding: 40px;">
+          <div style="font-size: 13px; color: #71717a;">No RivalReview projects found.</div>
+        </div>
+        {% else %}
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% for project in health %}
+          <div class="project-card {% if selected_project == project.project_id %}selected{% endif %}"
+               onclick="selectProject('{{ project.project_id }}', '{{ project.project_name | replace("'", "\\'") }}', this)">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+              {% if project.status == 'completed' %}<span class="badge badge-green">completed</span>
+              {% elif project.status == 'failed' %}<span class="badge badge-red">failed</span>
+              {% else %}<span class="badge badge-zinc">{{ project.status }}</span>{% endif %}
+              <span class="mono" style="font-size: 10px; color: #3f3f46;">
+                {{ project.period_start.strftime('%b %Y') if project.period_start else '—' }} → {{ project.period_end.strftime('%b %Y') if project.period_end else '—' }}
+              </span>
+            </div>
+            <div style="font-size: 14px; font-weight: 500; color: #e4e4e7; margin-bottom: 4px;">{{ project.project_name }}</div>
+            <div style="display: flex; gap: 16px;">
+              <span style="font-size: 11px; color: #52525b;">{{ project.apps | length }} app{{ 's' if project.apps | length != 1 else '' }}</span>
+              <span style="font-size: 11px; color: #52525b;">{{ project.total_reviews }} reviews</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- Last Eval Results -->
+      {% if last_run and last_run.get('results') %}
+      <section>
+        <div class="section-label">
+          <span class="mono" style="font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.12em; white-space: nowrap;">LAST EVAL RUN{% if last_run.get('is_partial') %} — PARTIAL{% endif %}</span>
+          <div class="line"></div>
+          <a href="/history" class="mono" style="font-size: 11px; color: #3f3f46; text-decoration: none; white-space: nowrap;" onmouseover="this.style.color='#71717a'" onmouseout="this.style.color='#3f3f46'">view all →</a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 24px;">
+          {% for label, val, col in [('Evals run', last_run.summary.total, '#f4f4f5'), ('Passing', last_run.summary.passed, '#34d399'), ('Failing', last_run.summary.failed, '#f87171'), ('Errors', last_run.summary.errors, '#fbbf24')] %}
+          <div class="card" style="padding: 16px 20px;">
+            <div class="mono" style="font-size: 26px; font-weight: 600; color: {{ col }};">{{ val }}</div>
+            <div style="font-size: 11px; color: #52525b; margin-top: 4px;">{{ label }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% for layer_num in [1, 2, 3, 4] %}
+        {% set layer_results = last_run.by_layer.get(layer_num, []) %}
+        {% if layer_results %}
+        <div style="margin-bottom: 28px;">
+          <div class="mono" style="font-size: 10px; color: #3f3f46; letter-spacing: 0.15em; margin-bottom: 8px;">LAYER {{ layer_num }}</div>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+              <thead>
+                <tr style="border-bottom: 1px solid #27272a;">
+                  <th class="mono" style="font-size: 10px; color: #52525b; font-weight: 500; text-align: left; padding-bottom: 8px; padding-right: 12px; width: 40px;">ID</th>
+                  <th class="mono" style="font-size: 10px; color: #52525b; font-weight: 500; text-align: left; padding-bottom: 8px; padding-right: 12px;">Name</th>
+                  <th class="mono" style="font-size: 10px; color: #52525b; font-weight: 500; text-align: left; padding-bottom: 8px; padding-right: 12px; width: 160px;">Score / Threshold</th>
+                  <th class="mono" style="font-size: 10px; color: #52525b; font-weight: 500; text-align: left; padding-bottom: 8px; padding-right: 12px; width: 90px;">Delta</th>
+                  <th class="mono" style="font-size: 10px; color: #52525b; font-weight: 500; text-align: left; padding-bottom: 8px; padding-right: 12px; width: 70px;">Result</th>
+                  <th class="mono" style="font-size: 10px; color: #52525b; font-weight: 500; text-align: left; padding-bottom: 8px; width: 55px;">Re-run</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in layer_results %}
+                {% set row_id = "row-" ~ r.eval_id | replace(".", "-") %}
+                <tr class="data-row" onclick="toggle('{{ row_id }}')">
+                  <td class="mono" style="font-size: 11px; color: #52525b; padding: 10px 12px 10px 0; border-bottom: 1px solid #18181b;">{{ r.eval_id }}</td>
+                  <td style="padding: 10px 12px 10px 0; border-bottom: 1px solid #18181b; border-left: {% if not r.passed_eval and not r.error %}3px solid #7f1d1d{% else %}3px solid transparent{% endif %}; padding-left: 6px;">
+                    <span style="font-size: 13px; color: {% if not r.passed_eval and not r.error %}#fca5a5{% else %}#d4d4d8{% endif %};">{{ r.name }}</span>
+                    <span class="mono" style="font-size: 9px; color: #3f3f46; margin-left: 6px;">▾</span>
+                  </td>
+                  <td style="padding: 10px 12px 10px 0; border-bottom: 1px solid #18181b;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="progress-track" style="width: 60px;">
+                        <div class="progress-fill" style="width: {{ (r.score * 100)|int }}%; background: {% if r.passed_eval %}#34d399{% elif r.score >= 0.5 %}#fbbf24{% else %}#f87171{% endif %};"></div>
+                      </div>
+                      <span class="mono" style="font-size: 11px; color: {% if r.passed_eval %}#34d399{% else %}#f87171{% endif %};">{{ "%.0f"|format(r.score * 100) }}% / {{ "%.0f"|format(r.threshold * 100) }}%</span>
+                    </div>
+                  </td>
+                  <td class="mono" style="font-size: 11px; padding: 10px 12px 10px 0; border-bottom: 1px solid #18181b;">
+                    {% if r.delta %}
+                      {% if r.delta.direction == 'new' %}
+                        <span style="color:#3f3f46;">first run</span>
+                      {% elif r.delta.direction == 'up' %}
+                        <span style="color:#52525b;">{{ r.delta.prev }}%</span>
+                        <span style="color:#3f3f46;"> → </span>
+                        <span style="color:#34d399;">{{ r.delta.curr }}% ↑</span>
+                      {% elif r.delta.direction == 'down' %}
+                        <span style="color:#52525b;">{{ r.delta.prev }}%</span>
+                        <span style="color:#3f3f46;"> → </span>
+                        <span style="color:#f87171;">{{ r.delta.curr }}% ↓</span>
+                      {% else %}
+                        <span style="color:#52525b;">{{ r.delta.prev }}%</span>
+                        <span style="color:#3f3f46;"> → {{ r.delta.curr }}%</span>
+                      {% endif %}
+                    {% else %}
+                      <span style="color:#27272a;">—</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 10px 12px 10px 0; border-bottom: 1px solid #18181b;">
+                    {% if r.error %}<span class="badge badge-red">Error</span>
+                    {% elif r.passed_eval %}<span class="badge badge-green">Pass ✓</span>
+                    {% else %}<span class="badge badge-red">Fail ✗</span>{% endif %}
+                  </td>
+                  <td style="padding: 10px 0; border-bottom: 1px solid #18181b;" onclick="event.stopPropagation()">
+                    <form method="post" action="/run-single">
+                      <input type="hidden" name="eval_id"    value="{{ r.eval_id }}" />
+                      <input type="hidden" name="project_id" value="{{ selected_project }}" />
+                      <input type="hidden" name="version_id" value="{{ selected_version }}" />
+                      <button type="submit" class="run-single-btn">▶ run</button>
+                    </form>
+                  </td>
+                </tr>
+                <tr id="{{ row_id }}" class="drilldown">
+                  <td colspan="6" style="padding: 12px 16px 16px; background: #0d0d0f;">
+                    {% if r.criteria %}
+                    <div style="font-size: 11px; color: #71717a; margin-bottom: 10px; border-left: 2px solid #27272a; padding-left: 10px; line-height: 1.5;">{{ r.criteria }}</div>
+                    {% endif %}
+                    {% if r.error %}
+                    <div class="mono" style="font-size: 11px; color: #f87171; white-space: pre-wrap;">{{ r.error }}</div>
+                    {% elif r.details %}
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <thead><tr>
+                        <th class="mono" style="font-size: 10px; color: #3f3f46; text-align: left; padding-bottom: 6px; border-bottom: 1px solid #1c1c1f; padding-right: 16px;">Item</th>
+                        <th class="mono" style="font-size: 10px; color: #3f3f46; text-align: left; padding-bottom: 6px; border-bottom: 1px solid #1c1c1f; width: 30px;">Pass</th>
+                        <th class="mono" style="font-size: 10px; color: #3f3f46; text-align: left; padding-bottom: 6px; border-bottom: 1px solid #1c1c1f;">Note</th>
+                      </tr></thead>
+                      <tbody>
+                        {% set failures = r.details | selectattr("passed", "equalto", false) | list %}
+                        {% set passes   = r.details | selectattr("passed") | list %}
+                        {% for item in (failures + passes)[:20] %}
+                        <tr style="border-bottom: 1px solid #18181b;">
+                          <td class="mono" style="font-size: 11px; color: #71717a; padding: 5px 16px 5px 0;">{{ item.item_id }}</td>
+                          <td class="mono" style="font-size: 11px; padding: 5px 8px 5px 0; color: {% if item.passed %}#34d399{% else %}#f87171{% endif %};">{{ "✓" if item.passed else "✗" }}</td>
+                          <td class="mono" style="font-size: 11px; color: #52525b; padding: 5px 0;">{{ item.note }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if r.details | length > 20 %}
+                        <tr><td colspan="3" class="mono" style="font-size: 10px; color: #3f3f46; padding-top: 8px;">... {{ r.details | length - 20 }} more items</td></tr>
+                        {% endif %}
+                      </tbody>
+                    </table>
+                    {% else %}
+                    <div class="mono" style="font-size: 11px; color: #3f3f46;">No details.</div>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </section>
+      {% endif %}
+
+    </div>
+
+    <!-- Right panel -->
+    <div style="position: sticky; top: 24px;">
+      <div class="section-label">
+        <span class="mono" style="font-size: 11px; font-weight: 600; color: #52525b; letter-spacing: 0.12em; white-space: nowrap;">RUN EVALS</span>
+        <div class="line"></div>
+      </div>
+
+      <div class="card" style="padding: 20px;">
+        <form method="post" action="/run" style="display: flex; flex-direction: column; gap: 14px;">
+          <input type="hidden" name="project_id" id="project_id_input" value="{{ selected_project }}" />
+
+          <div>
+            <div class="mono" style="font-size: 10px; color: #52525b; margin-bottom: 6px; letter-spacing: 0.08em;">SELECTED PROJECT</div>
+            <div id="selected_project_display"
+              style="font-size: 12px; color: #e4e4e7; padding: 8px 12px; background: #18181b; border: 1px solid #27272a; border-radius: 4px; min-height: 36px; line-height: 1.4;">
+              {% if selected_project %}
+                {% set sel = health | selectattr("project_id", "equalto", selected_project) | list %}
+                {{ sel[0].project_name if sel else '—' }}
+              {% else %}
+                <span style="color: #3f3f46;">← click a project card</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div>
+            <label class="mono" style="font-size: 10px; color: #52525b; display: block; margin-bottom: 6px; letter-spacing: 0.08em;">VERSION</label>
+            <select name="version_id" class="select-input">
+              {% for v in all_versions %}
+              <option value="{{ v.id }}" {% if v.id == selected_version %}selected{% endif %}>
+                {{ v.name }}{% if v.is_baseline %} (baseline){% elif v.is_current %} (current){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 4px;">
+            <button type="submit"
+              style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; background: #34d399; color: #09090b; padding: 9px 20px; border-radius: 4px; border: none; cursor: pointer; width: 100%; transition: background 0.15s;"
+              onmouseover="this.style.background='#6ee7b7'" onmouseout="this.style.background='#34d399'">
+              ▶ RUN ALL EVALS
+            </button>
+            <a href="/versions" class="mono"
+              style="font-size: 11px; color: #52525b; border: 1px solid #27272a; padding: 6px; border-radius: 4px; text-align: center; text-decoration: none; display: block; transition: all 0.15s;"
+              onmouseover="this.style.borderColor='#52525b'; this.style.color='#a1a1aa'"
+              onmouseout="this.style.borderColor='#27272a'; this.style.color='#52525b'">
+              + New Version
+            </a>
+          </div>
+        </form>
+      </div>
+
+      {% if recent_runs %}
+      <div style="margin-top: 20px;">
+        <div class="mono" style="font-size: 10px; color: #3f3f46; letter-spacing: 0.12em; margin-bottom: 10px;">RECENT RUNS</div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          {% for run in recent_runs %}
+          <a href="/history/{{ run.id }}" style="text-decoration: none;">
+            <div class="card" style="padding: 10px 12px; transition: border-color 0.15s;"
+              onmouseover="this.style.borderColor='#3f3f46'" onmouseout="this.style.borderColor='#27272a'">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <div class="mono" style="font-size: 10px; color: #52525b;">{{ to_ist_short(run.started_at) }}</div>
+                  {% if run.project_name %}
+                  <div style="font-size: 10px; color: #3f3f46; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px;" title="{{ run.project_name }}">{{ run.project_name }}</div>
+                  {% endif %}
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <span class="mono" style="font-size: 10px; color: #34d399;">{{ run.passed }}✓</span>
+                  <span class="mono" style="font-size: 10px; color: #f87171;">{{ run.failed }} F</span>
+                </div>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<footer style="border-top: 1px solid #18181b; padding: 12px 32px;">
+  <div style="max-width: 1400px; margin: 0 auto;">
+    <p class="mono" style="font-size: 10px; color: #27272a; margin: 0;">DB → {{ db_path }}</p>
+  </div>
+</footer>
+
+<script>
+function selectProject(projectId, projectName, el) {
+  document.getElementById('project_id_input').value = projectId;
+  document.getElementById('selected_project_display').textContent = projectName;
+  document.querySelectorAll('.project-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function toggle(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+</script>
+</body>
+</html>
